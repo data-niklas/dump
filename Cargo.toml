@@ -1,0 +1,23 @@
+[package]
+name = "dump"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = {version = "4.5.1", features = ["env", "derive"]}
+tokio = {version="1.36.0", features=["full"]}
+futures-util = "0.3.30"
+bytes = "1.5.0"
+poem = {version = "2.0.0", features = ["server", "multipart", "compression", "static-files", "tower-compat"]}
+rusqlite = { version = "0.31.0", features = ["bundled", "chrono", "uuid"] }
+chrono = "0.4.34"
+uuid = {version="1.7.0", features=["v4"]}
+sha256 = "1.5.0"
+humantime = "2.1.0"
+sqids = "0.4.1"
+rand = "0.8.5"
+magika = {git = "https://github.com/google/magika.git" }
+tower = { version = "0.4.13", default-features = false, features = ["limit"] }
+phf = {version="0.11.2", features = ["macros"]}
