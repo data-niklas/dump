@@ -50,12 +50,15 @@
           rustToolchain
           openssl
           pkg-config
-          cargo-deny
-          cargo-edit
-          cargo-watch
           rust-analyzer
           onnxruntime
+          stdenv.cc.cc.lib
         ];
+        # shellHook = ''export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.lib.makeLibraryPath [
+        #     pkgs.alsaLib
+        #     pkgs.udev
+        #     ${stdenv.cc.cc.lib}/lib/
+        #   ]}"'';
         LD_LIBRARY_PATH = nixpkgs.lib.makeLibraryPath packages;
       };
     });
