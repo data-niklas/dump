@@ -8,3 +8,6 @@ date: 02.03.2024
 - make `token` configurable via env and cli
 - make URL deletable using `token`
 - add `index.html` with simple web form
+- add logging
+- allow blocking VPN / Tor
+- configurable content-disposition (inline or attachment)

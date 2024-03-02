@@ -197,6 +197,10 @@ async fn get_file(Path(token): Path<String>, state: Data<&Arc<ServeArgs>>) -> Re
     let mut builder = Response::builder()
         .header(header::ACCEPT_RANGES, "bytes")
         .header(header::CONTENT_LENGTH, file.size as u64)
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("inline; filename=\"{}\"", url.file_name),
+        )
         .header("X-Expires", url.expires.to_string())
         .content_type(file.mime);
     Ok(builder.body(body))
