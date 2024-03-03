@@ -1,3 +1,4 @@
+use crate::block_list::build_deny_ips;
 use crate::models::{Dump, DumpDetails, File};
 use crate::util::calculate_expires;
 use crate::{models::Url, opts::ServeArgs};
@@ -13,14 +14,12 @@ use poem::{
     middleware::AddData,
     post,
     web::{Data, Multipart, Path},
-    Body, EndpointExt, Request, Response, Result, Route, Server,
+    Body, EndpointExt, Response, Result, Route, Server,
 };
-use std::time::Duration;
 use std::{error::Error, fmt::Display, sync::Arc};
 use tower::limit::RateLimitLayer;
-
 #[derive(Debug, Clone)]
-struct DumpError {
+pub struct DumpError {
     message: String,
 }
 
@@ -151,7 +150,7 @@ async fn dump_file(multipart: Multipart, state: Data<&Arc<ServeArgs>>) -> Result
                 "The quota has been exceeded".to_string(),
             )));
         }
-        if state.denied_groups.contains(&file.group) {
+        if state.blocked_groups.contains(&file.group) {
             return Err(Forbidden(DumpError::new(
                 "This type of file is not allowed".to_string(),
             )));
@@ -226,22 +225,39 @@ fn ensure_model_files(data_directory: &std::path::Path) {
     }
 }
 
+macro_rules! create_rate_limit_layer {
+    ($rate_limit_count:expr, $rate_limit_duration:expr) => {
+        TowerLayerCompatExt::compat(RateLimitLayer::new($rate_limit_count, $rate_limit_duration))
+    };
+}
+
 pub async fn serve(args: ServeArgs) {
     std::fs::create_dir_all(&args.data_directory.join("files"))
         .expect("Could not create files directory");
     ensure_model_files(&args.data_directory);
+    let rate_limit_count = args.rate_limit_count;
+    let rate_limit_duration = args.rate_limit_duration;
+    let deny_ips_layer = build_deny_ips(&args);
+
     let address = args.address.clone();
     // let db_path = args.data_directory.join("db.sqlite3");
     let data = Arc::new(args);
     let app = Route::new()
         .at(
             "/",
-            post(dump_file).with(TowerLayerCompatExt::compat(RateLimitLayer::new(
-                1,
-                Duration::from_secs(5),
-            ))),
+            post(dump_file).with(create_rate_limit_layer!(
+                rate_limit_count,
+                rate_limit_duration
+            )),
         )
-        .at("/:token", get(get_file))
+        .at(
+            "/:token",
+            get(get_file).with(create_rate_limit_layer!(
+                rate_limit_count,
+                rate_limit_duration
+            )),
+        )
+        .with(deny_ips_layer)
         .with(AddData::new(data));
     let _ = Server::new(TcpListener::bind(address))
         .name("dump")

@@ -9,5 +9,7 @@ date: 02.03.2024
 - make URL deletable using `token`
 - add `index.html` with simple web form
 - add logging
-- allow blocking VPN / Tor
+- allow blocking VPN / Tor for upload
 - configurable content-disposition (inline or attachment)
+- write a README.md with instructions
+- add a LICENSE
