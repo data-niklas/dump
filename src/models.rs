@@ -152,7 +152,11 @@ impl Url {
 
     pub fn from_dump_details_and_file(dump: &DumpDetails, file: &File) -> Url {
         let token = random_token();
-        let secret = random_token();
+        let secret = if dump.secret.is_some() {
+            dump.secret.clone().unwrap()
+        } else {
+            random_token()
+        };
         let expires = Utc::now() + dump.expires;
         Self::new(
             token,
@@ -192,6 +196,13 @@ impl Url {
             )
             .map(|_| ())
     }
+
+    pub fn delete(&self, connection: &Connection) -> Result<(), rusqlite::Error> {
+        connection
+            .execute("DELETE FROM urls WHERE token = ?1", (&self.token,))
+            .map(|_| ())
+    }
+
     pub fn search_url_by_token(
         connection: &Connection,
         token: &str,

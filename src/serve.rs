@@ -7,7 +7,6 @@ use humantime::parse_duration;
 use poem::error::{Forbidden, InsufficientStorage, NotFoundError};
 use poem::http::{header, StatusCode};
 use poem::middleware::{CatchPanic, TowerLayerCompatExt};
-use poem::{async_trait, Endpoint, Middleware, Request};
 use poem::{
     error::{BadRequest, InternalServerError, PayloadTooLarge},
     get, handler,
@@ -136,7 +135,7 @@ async fn dump_parse_multipart(mut multipart: Multipart, state: Arc<ServeArgs>) -
 }
 
 #[handler]
-async fn dump_file(multipart: Multipart, state: Data<&Arc<ServeArgs>>) -> Result<String> {
+async fn dump_file_handler(multipart: Multipart, state: Data<&Arc<ServeArgs>>) -> Result<String> {
     let dump = dump_parse_multipart(multipart, state.clone()).await?;
     let file = File::from_dump(&dump, &state.data_directory);
     let connection = state
@@ -171,12 +170,18 @@ async fn dump_file(multipart: Multipart, state: Data<&Arc<ServeArgs>>) -> Result
         access_url.push('/');
     }
     access_url.push_str(&url.token);
-    access_url.push('\n');
-    Ok(access_url)
+
+    let mut delete_url = access_url.clone();
+    delete_url.push('/');
+    delete_url.push_str(&url.secret);
+    Ok(access_url + "\n" + &delete_url + "\n")
 }
 
 #[handler]
-async fn get_file(Path(token): Path<String>, state: Data<&Arc<ServeArgs>>) -> Result<Response> {
+async fn get_file_handler(
+    Path(token): Path<String>,
+    state: Data<&Arc<ServeArgs>>,
+) -> Result<Response> {
     let connection = state
         .create_connection()
         .map_err(|e| InternalServerError(e))?;
@@ -204,6 +209,29 @@ async fn get_file(Path(token): Path<String>, state: Data<&Arc<ServeArgs>>) -> Re
         .header("X-Expires", url.expires.to_string())
         .content_type(file.mime);
     Ok(builder.body(body))
+}
+
+#[handler]
+async fn delete_url_handler(
+    Path((token, secret)): Path<(String, String)>,
+    state: Data<&Arc<ServeArgs>>,
+) -> Result<Response> {
+    let connection = state
+        .create_connection()
+        .map_err(|e| InternalServerError(e))?;
+    let url = Url::search_url_by_token(&connection, &token).map_err(|x| InternalServerError(x))?;
+    if url.is_none() {
+        return Err(NotFoundError {}.into());
+    }
+    let url = url.unwrap();
+    if url.secret != secret {
+        return Err(Forbidden(DumpError::new("Invalid secret".to_string())).into());
+    }
+    url.delete(&connection)
+        .map_err(|x| InternalServerError(x))?;
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::empty()))
 }
 
 fn ensure_model_files(data_directory: &std::path::Path) {
@@ -246,14 +274,21 @@ pub async fn serve(args: ServeArgs) {
     let app = Route::new()
         .at(
             "/",
-            post(dump_file).with(create_rate_limit_layer!(
+            post(dump_file_handler).with(create_rate_limit_layer!(
+                rate_limit_count,
+                rate_limit_duration
+            )),
+        )
+        .at(
+            "/:token/:secret",
+            post(delete_url_handler).with(create_rate_limit_layer!(
                 rate_limit_count,
                 rate_limit_duration
             )),
         )
         .at(
             "/:token",
-            get(get_file).with(create_rate_limit_layer!(
+            get(get_file_handler).with(create_rate_limit_layer!(
                 rate_limit_count,
                 rate_limit_duration
             )),
