@@ -5,8 +5,9 @@ use crate::{models::Url, opts::ServeArgs};
 use chrono::TimeDelta;
 use humantime::parse_duration;
 use poem::error::{Forbidden, InsufficientStorage, NotFoundError};
-use poem::http::header;
-use poem::middleware::TowerLayerCompatExt;
+use poem::http::{header, StatusCode};
+use poem::middleware::{CatchPanic, TowerLayerCompatExt};
+use poem::{async_trait, Endpoint, Middleware, Request};
 use poem::{
     error::{BadRequest, InternalServerError, PayloadTooLarge},
     get, handler,
@@ -258,6 +259,12 @@ pub async fn serve(args: ServeArgs) {
             )),
         )
         .with(deny_ips_layer)
+        .with(CatchPanic::new().with_handler(|error| {
+            log::error!("Internal server error: {:?}", error);
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::empty())
+        }))
         .with(AddData::new(data));
     let _ = Server::new(TcpListener::bind(address))
         .name("dump")

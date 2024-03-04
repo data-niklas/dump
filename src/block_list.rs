@@ -1,9 +1,10 @@
 use crate::opts::ServeArgs;
 use crate::serve::DumpError;
+use log::info;
 use poem::Result;
 use poem::{error::Forbidden, Request};
 use std::collections::HashSet;
-use std::net::{SocketAddr, IpAddr};
+use std::net::IpAddr;
 use std::str::FromStr;
 
 use poem::{async_trait, Endpoint, Middleware};
@@ -27,8 +28,8 @@ impl<E: Endpoint> Endpoint for DenyIpsImpl<E> {
 
     async fn call(&self, req: Request) -> Result<Self::Output> {
         let remote_ip = req.remote_addr().0.as_socket_addr().unwrap().ip();
-        println!("remote_ip: {:?}", remote_ip);
         if self.0.contains(&remote_ip) {
+            info!("Blocked IP: {}", remote_ip);
             return Err(Forbidden(DumpError::new("Forbidden".to_string())));
         }
         self.1.call(req).await
