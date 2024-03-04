@@ -7,6 +7,7 @@ use humantime::parse_duration;
 use poem::error::{Forbidden, InsufficientStorage, NotFoundError};
 use poem::http::{header, StatusCode};
 use poem::middleware::{CatchPanic, TowerLayerCompatExt};
+use poem::web::Html;
 use poem::{
     error::{BadRequest, InternalServerError, PayloadTooLarge},
     get, handler,
@@ -82,11 +83,13 @@ async fn dump_parse_multipart(mut multipart: Multipart, state: Arc<ServeArgs>) -
                 Ok(bytes) => bytes,
                 Err(e) => return Err(e.into()),
             };
-            secret = Some(
-                std::str::from_utf8(&secret_bytes)
-                    .map_err(|_e| BadRequest(DumpError::new("Could not parse secret".to_string())))?
-                    .to_string(),
-            );
+
+            let secret_text = std::str::from_utf8(&secret_bytes)
+                .map_err(|_e| BadRequest(DumpError::new("Could not parse secret".to_string())))?
+                .to_string();
+            if !secret_text.is_empty() {
+                secret = Some(secret_text);
+            }
         } else if name == "expires" {
             let expires_bytes = match field.bytes().await {
                 Ok(bytes) => bytes,
@@ -234,6 +237,11 @@ async fn delete_url_handler(
         .body(Body::empty()))
 }
 
+#[handler]
+async fn index_handler(state: Data<&Arc<ServeArgs>>) -> Html<&'static str> {
+    Html(include_str!("../assets/index.html"))
+}
+
 fn ensure_model_files(data_directory: &std::path::Path) {
     let model_directory = data_directory.join("model");
     if !model_directory.exists() {
@@ -274,10 +282,12 @@ pub async fn serve(args: ServeArgs) {
     let app = Route::new()
         .at(
             "/",
-            post(dump_file_handler).with(create_rate_limit_layer!(
-                rate_limit_count,
-                rate_limit_duration
-            )),
+            get(index_handler)
+                .post(dump_file_handler)
+                .with(create_rate_limit_layer!(
+                    rate_limit_count,
+                    rate_limit_duration
+                )),
         )
         .at(
             "/:token/:secret",

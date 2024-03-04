@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dump</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #232323;
+    }
+
+    h2 {
+      margin-bottom: 0.35em;
+    }
+
+    body {
+      margin-left: 1vw;
+    }
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: 3em;
+    }
+
+    form>* {
+      margin: 0.2em 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Dump</h1>
+  <p>Simple to use file hosting server. A clone of https://0x0.st written in Rust.</p>
+
+  <h2>Terms of Service</h2>
+  It is forbidden to upload any of the following:
+  <ul>
+    <li> Malware / Botnet / other malicious software </li>
+    <li> Pornography / Gore </li>
+    <li> Pirated content </li>
+    <li> Backups </li>
+    <li> Anything illegal under German law </li>
+  </ul>
+
+  <h2>Usage</h2>
+  <p>Upload a file and share the token with others. Optionally set a secret to delete the file later.</p>
+
+  <p>Uploading a file returns two URLs. The first URL is the access URL, which downloads the file. The second URL may be
+    used to prematurely delete the file. Send a POST request to the second URL to delete the file.</p>
+
+  <p>The access URL has the following structure: <code>https://dump.example.com/token</code></p>
+  <p>The delete URL has the following structure: <code>https://dump.example.com/token/secret</code></p>
+
+  <h2>Upload</h2>
+  <form method="post" enctype="multipart/form-data" target="upload-result">
+    <input type="file" name="file" required></br>
+    <input type="text" name="secret" placeholder="Secret (optional)"></br>
+    <input type="submit" value="Upload">
+  </form>
+  <iframe name="upload-result" id="upload-result"></iframe>
+
+  <h2>Delete</h2>
+  Requires JavaScript to be enabled. There will be no confirmation dialog. Check the URL to verify the file is deleted.
+  <form>
+    <input type="text" name="token" id="token" placeholder="Token" required></br>
+    <input type="text" name="secret" id="secret" placeholder="Secret" required></br>
+    <input type="button" value="Delete"
+      onclick="fetch('/' + document.getElementById('token').value + '/' + document.getElementById('secret').value, {method: 'POST'})">
+  </form>
+
+  <h2>Source</h2>
+  <p>Source code is available on <a href="https://github.com/data-niklas/dump">GitHub</a>.</p>
+
+</body>
+
+</html>

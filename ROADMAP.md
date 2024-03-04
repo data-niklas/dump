@@ -7,4 +7,3 @@ date: 02.03.2024
 - `stats` command to show number of files and total used size
 - make `token` configurable via env and cli
 - make URL deletable using `token`
-- add `index.html` with simple web form
