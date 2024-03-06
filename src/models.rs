@@ -46,8 +46,31 @@ impl File {
         }
     }
 
+    pub fn mime_count(conn: &Connection) -> Result<Vec<(String, usize)>, rusqlite::Error> {
+        conn.prepare(
+            "SELECT mime, COUNT(mime) AS count FROM files GROUP BY mime ORDER BY count DESC",
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .unwrap()
+        .collect::<Result<Vec<(String, usize)>, rusqlite::Error>>()
+    }
+
+    pub fn group_count(conn: &Connection) -> Result<Vec<(String, usize)>, rusqlite::Error> {
+        conn.prepare("SELECT file_type, COUNT(file_type) AS count FROM files GROUP BY file_type ORDER BY count DESC")?
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .collect::<Result<Vec<(String, usize)>, rusqlite::Error>>()
+    }
+
+    pub fn count(conn: &Connection) -> Result<usize, rusqlite::Error> {
+        conn.query_row("SELECT COUNT(1) FROM files", [], |row| Ok(row.get(0)?))
+    }
+
     pub fn size_sum(conn: &Connection) -> Result<usize, rusqlite::Error> {
-        conn.query_row("SELECT COUNT(size) FROM files", [], |row| Ok(row.get(0)?))
+        conn.query_row("SELECT SUM(size) FROM files", [], |row| {
+            let value: Option<u64> = row.get(0)?;
+            Ok(value.unwrap_or(0) as usize)
+        })
     }
 
     pub fn register_table(conn: &Connection) {
@@ -148,6 +171,10 @@ impl Url {
             expires,
             file_name,
         }
+    }
+
+    pub fn count(conn: &Connection) -> Result<usize, rusqlite::Error> {
+        conn.query_row("SELECT COUNT(1) FROM urls", [], |row| Ok(row.get(0)?))
     }
 
     pub fn from_dump_details_and_file(dump: &DumpDetails, file: &File) -> Url {

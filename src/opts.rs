@@ -22,6 +22,10 @@ pub enum Commands {
         #[arg(short, long, env)]
         data_directory: PathBuf,
     },
+    Stats {
+        #[arg(short, long, env)]
+        data_directory: PathBuf,
+    },
     Serve(ServeArgs),
 
     Generate {

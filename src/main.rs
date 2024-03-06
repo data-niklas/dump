@@ -10,6 +10,7 @@ mod mime;
 mod models;
 mod opts;
 mod serve;
+mod stats;
 mod util;
 
 use tracing_subscriber;
@@ -21,6 +22,7 @@ async fn main() {
     match cli.command {
         opts::Commands::Clean { data_directory } => clean(data_directory).await,
         opts::Commands::Serve(args) => serve(args).await,
+        opts::Commands::Stats { data_directory } => stats::stats(data_directory).await,
         opts::Commands::Generate { shell } => {
             let mut cmd = Cli::command_for_update();
             print_completions(shell, &mut cmd);
