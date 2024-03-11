@@ -70,8 +70,8 @@ impl ValueEnum for ContentDisposition {
     }
 }
 
-fn parse_duration(s: &str) -> Result<Duration, humantime::DurationError> {
-    humantime::parse_duration(s)
+fn parse_duration(s: &str) -> Result<Duration, cyborgtime::DurationError> {
+    cyborgtime::parse_duration(s)
 }
 
 #[derive(Args, Clone, Serialize)]

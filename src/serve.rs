@@ -3,7 +3,7 @@ use crate::models::{Dump, DumpDetails, File};
 use crate::util::calculate_expires;
 use crate::{models::Url, opts::ServeArgs};
 use chrono::TimeDelta;
-use humantime::parse_duration;
+use cyborgtime::parse_duration;
 use poem::error::{Forbidden, InsufficientStorage, NotFoundError};
 use poem::http::{header, StatusCode};
 use poem::middleware::{CatchPanic, TowerLayerCompatExt};
