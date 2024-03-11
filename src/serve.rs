@@ -14,7 +14,7 @@ use poem::{
     listener::TcpListener,
     middleware::AddData,
     post,
-    web::{Data, Multipart, Path},
+    web::{Data, Json, Multipart, Path},
     Body, EndpointExt, Response, Result, Route, Server,
 };
 use std::{error::Error, fmt::Display, sync::Arc};
@@ -238,7 +238,7 @@ async fn delete_url_handler(
 }
 
 #[handler]
-async fn index_handler(state: Data<&Arc<ServeArgs>>) -> Html<&'static str> {
+async fn index_handler(_state: Data<&Arc<ServeArgs>>) -> Html<&'static str> {
     Html(include_str!("../assets/index.html"))
 }
 
@@ -260,6 +260,30 @@ fn ensure_model_files(data_directory: &std::path::Path) {
         )
         .expect("Could not write model config file");
     }
+}
+
+#[handler]
+async fn get_used(state: Data<&Arc<ServeArgs>>) -> Result<String> {
+    let connection = state
+        .create_connection()
+        .map_err(|e| InternalServerError(e))?;
+    let size_sum = File::size_sum(&connection).map_err(|x| InternalServerError(x))?;
+    Ok(size_sum.to_string())
+}
+
+#[handler]
+async fn get_used_percentage(state: Data<&Arc<ServeArgs>>) -> Result<String> {
+    let connection = state
+        .create_connection()
+        .map_err(|e| InternalServerError(e))?;
+    let size_sum = File::size_sum(&connection).map_err(|x| InternalServerError(x))?;
+    let percentage = size_sum as f64 / state.disk_quota as f64 * 100.0;
+    Ok(format!("{:.2}", percentage))
+}
+
+#[handler]
+async fn get_settings(state: Data<&Arc<ServeArgs>>) -> Result<Json<ServeArgs>> {
+    Ok(Json(state.as_ref().clone()))
 }
 
 macro_rules! create_rate_limit_layer {
@@ -299,6 +323,27 @@ pub async fn serve(args: ServeArgs) {
         .at(
             "/:token",
             get(get_file_handler).with(create_rate_limit_layer!(
+                rate_limit_count,
+                rate_limit_duration
+            )),
+        )
+        .at(
+            "/settings",
+            get(get_settings).with(create_rate_limit_layer!(
+                rate_limit_count,
+                rate_limit_duration
+            )),
+        )
+        .at(
+            "/used",
+            get(get_used).with(create_rate_limit_layer!(
+                rate_limit_count,
+                rate_limit_duration
+            )),
+        )
+        .at(
+            "/used_percent",
+            get(get_used_percentage).with(create_rate_limit_layer!(
                 rate_limit_count,
                 rate_limit_duration
             )),

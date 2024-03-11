@@ -79,6 +79,27 @@
   <h2>Source</h2>
   <p>Source code is available on <a href="https://github.com/data-niklas/dump">GitHub</a>.</p>
 
+  <h2>Endpoints</h2>
+  <ul>
+    <li>GET / - This page</li>
+    <li>POST / - Upload a file<br>
+      Multipart arguments:
+      <ul>
+        <li>file - The file to upload</li>
+        <li>secret (optional) - Special secret used to delete the file</li>
+        <li>expires (optional) - Time until the file expires. Must be smaller than the maximum file duration. Provide
+          the time in a format such as <code>12h 5m</code>, <code>20s</code>, <code>15d</code> (<a
+            href="https://docs.rs/humantime/latest/humantime/fn.parse_duration.html">Reference</a>)</li>
+      </ul>
+    </li>
+    <li>POST /:token/:secret - Delete a file</li>
+    <li>GET /:token - Download a file</li>
+    <li>GET <a href="/settings">/settings</a> - Show the settings of the instance, including limits, such as the maximum
+      file size, maximum duration, etc.</li>
+    <li>GET <a href="/used">/used</a> - Show used space</li>
+    <li>GET <a href="/used_percent">/used_percent</a> - Show used space in percent</li>
+  </ul>
+
 </body>
 
 </html>

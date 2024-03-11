@@ -5,6 +5,7 @@ use crate::util::create_connection;
 use clap::{Args, Command, Parser, Subcommand, ValueEnum};
 use clap_complete::{generate, Generator, Shell};
 use rusqlite::Connection;
+use serde::Serialize;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -33,7 +34,7 @@ pub enum Commands {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum ContentDisposition {
     Inline,
     Attachment,
@@ -73,30 +74,48 @@ fn parse_duration(s: &str) -> Result<Duration, humantime::DurationError> {
     humantime::parse_duration(s)
 }
 
-#[derive(Args, Clone)]
+#[derive(Args, Clone, Serialize)]
 pub struct ServeArgs {
+
+    // Not needed for the settings command
+    #[serde(skip_serializing)]
     #[arg(short, long, env)]
     pub url: String,
+
+    // Should not be exposed in the settings
+    #[serde(skip_serializing)]
     #[arg(short, long, env)]
     pub data_directory: PathBuf,
+
     #[arg(long, env, default_value_t = usize::MAX)]
     pub disk_quota: usize,
+
+    #[serde(skip_serializing)]
     #[arg(short, long, env)]
     pub address: String,
+
     #[arg(long, env, default_value_t = 256*1024*1024)]
     pub max_size: usize,
+
     #[arg(long, env, default_value_t = 30 * 24 * 60 * 60 * 1000)]
     pub min_expires: usize,
+
     #[arg(long, env, default_value_t = 365 * 24 * 60 * 60 * 1000)]
     pub max_expires: usize,
+
     #[arg(long, env, value_parser, num_args = 0.., value_delimiter = ',', default_values_t = vec!["executable".to_string()])]
     pub blocked_groups: Vec<String>,
+
+    #[serde(skip_serializing)]
     #[arg(long, env)]
     pub blocked_ips: Option<PathBuf>,
+
     #[arg(long, env, default_value_t = ContentDisposition::Inline)]
     pub content_disposition: ContentDisposition,
+
     #[arg(long, env, default_value_t = 1)]
     pub rate_limit_count: u64,
+
     #[arg(long, env, default_value = "5s", value_parser=parse_duration)]
     pub rate_limit_duration: Duration,
 }

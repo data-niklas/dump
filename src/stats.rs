@@ -1,9 +1,9 @@
-use std::{path::PathBuf, io};
-use humansize::{format_size, DECIMAL};
 use crate::{
     models::{File, Url},
     util::create_connection,
 };
+use humansize::{format_size, DECIMAL};
+use std::path::PathBuf;
 
 pub async fn stats(data_directory: PathBuf) {
     let files_directory = data_directory.join("files");
@@ -11,7 +11,8 @@ pub async fn stats(data_directory: PathBuf) {
     let connection = create_connection(&data_directory).expect("Could not create connection");
     let file_count = File::count(&connection).expect("Could not count files");
     let url_count = Url::count(&connection).expect("Could not count urls");
-    let unlinked_url_count = Url::count_expired(&connection).expect("Could not search unlinked urls");
+    let unlinked_url_count =
+        Url::count_expired(&connection).expect("Could not search unlinked urls");
     let total_size = File::size_sum(&connection).expect("Could not get total size");
     let formatted_total_size = format_size(total_size as u64, DECIMAL);
 
@@ -34,5 +35,4 @@ pub async fn stats(data_directory: PathBuf) {
     for (mime, count) in mime_count {
         println!("{}: {}", mime, count);
     }
-
 }

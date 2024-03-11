@@ -461,6 +461,7 @@ dependencies = [
  "poem",
  "rand",
  "rusqlite",
+ "serde",
  "sha256",
  "sqids",
  "tokio",
